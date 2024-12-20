@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astma & Luftkvalitet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.4.0/gpx.min.js"></script>
+
+    <style>
+    .leaflet-div-icon
+    {
+        background:none;
+        border:0px solid #000;
+        color:#333333;
+    }
+    </style>
+
+    <script>
+        var sensors = {{ sensor_data | tojson }};
+        var polylinePoints = {{ path_data }};
+        var options = {{ t_option | tojson }};
+
+
+        function to_hex(c) {
+            var hex = parseInt(c).toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+
+        function make_map()
+        {
+            for (var i=0; i < options.length; i++)
+	        {
+		        var option = document.createElement("option");
+		        option.value = options[i][0];
+                option.text = options[i][1];
+
+                var select = document.getElementById("select_route")
+                select.appendChild(option);
+	        }
+
+	        var target = ['55.69157', '12.55473']
+	        var map = L.map('map').setView(target, 17);
+
+	        var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		        maxZoom: 19,
+		        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+	        }).addTo(map);
+
+
+
+            for (var i=0; i < sensors.length; i++)
+	        {
+	            var red = parseInt(sensors[i][1]) * 2.55;
+		        var green = 255 - red;
+                var c = "#" + to_hex(red) + to_hex(green) + "00";
+
+                var circle = L.circle([sensors[i][5], sensors[i][6]], {
+		            color: c,
+		            weight:0,
+		            fillColor: c,
+		            fillOpacity: 0.3,
+		            radius: 120
+	            }).addTo(map);
+
+                var date = sensors[i][4].split("-");
+
+                var den = (parseInt(sensors[i][3]) * 100) / (287.055 * (parseInt(sensors[i][2])+273));
+
+                var icon = L.divIcon({
+                    html: "<div class='te01'>Polution:" + sensors[i][1] +
+                    "<br>" + date[0] + "<br>" + date[1] + "<br>" +
+                    "Dentity: " + den.toFixed(2) + "</div>",
+                    iconSize: [40, 40]
+                });
+                var marker = L.marker([sensors[i][5], sensors[i][6]], {
+                    icon: icon
+                }).addTo(map);
+
+	        }
+
+            var polyline = L.polyline(polylinePoints).addTo(map);
+
+        }
+
+    </script>
+
+    <style>
+        #map_div {display:block;	height:650px; position:relative;}
+
+    </style>
+
+
+</head>
+<body onload="make_map()">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">AstmaLiv</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link active" href="/map">Kort</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Konto</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Udload GPX</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Log af</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mt-4">
+        <section id="home" class="mb-5 text-center">
+            <h2>Kort</h2>
+
+            <div id="map_div">
+        		<div id="map" style="width: 100%; height: 600px;"></div>
+            </div>
+            <form action="map" method="GET">
+                <select id="select_route" name="t"></select>
+                <input type="submit" value="vælg">
+            </form>
+
+        </section>
+        <section id="download" class="mb-5">
+            <h2>Download App</h2>
+            <p>Få vores app og forbedr din hverdag.</p>
+            <button class="btn btn-primary">Download til iOS</button>
+            <button class="btn btn-secondary">Download til Android</button>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white text-center py-3">
+        <p>&copy; 2024 AstmaLiv. Alle rettigheder forbeholdes.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
